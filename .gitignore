@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+
+# uv
+.uv/
+uv.lock.bak
+
+# テスト・型チェック
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# 論文 HTML と生成物（著作権のあるファイルはコミットしない）
+*.html
+!tests/data/*.html
+*_pinned.html
+*.zip
+
+# 秘密情報
+.env
+.env.*
+*.key
+secrets.*
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
