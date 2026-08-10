@@ -17,6 +17,8 @@ arXiv の HTML 版論文に**ピン留めパネル**を追加し、式・図・�
 
 左が本文、右がピン留めパネル。点線の下線が付いた式番号・図のキャプション・定理の見出しをクリックすると、その内容が右パネルに追加されます。パネル内では並べ替え（▲▼）と削除（×）ができ、左端をドラッグすると幅を変えられます。
 
+> スクリーンショットの論文: Paul S. Clarke, Annalivia Polselli, "Double Machine Learning for Static Panel Models with Fixed Effects", [arXiv:2312.08174](https://arxiv.org/abs/2312.08174), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。本ツールでピン留めパネルを追加した状態を表示しています。
+
 ## インストール
 
 ```bash
