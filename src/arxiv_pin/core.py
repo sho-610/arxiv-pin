@@ -126,22 +126,35 @@ STYLE = """
    入れ子で、内側の .ltx_document に読みやすさ用の固定幅が入っている。
    外側だけ縮めても文字列は動かないため、内側まで幅を連動させる。 */
 html { --pin-w: 388px; }
-.ltx_page_main {
-  margin-right: var(--pin-w) !important;
-  max-width: calc(100vw - var(--pin-w)) !important;
+/* パネル分の幅は body の右パディングで確保する。
+   .ltx_page_main の左マージンは、ar5iv が目次サイドバーの開閉に合わせて
+   動的に変えている。ここを上書きすると開閉時にレイアウトが崩れるため触らない。
+   body のパディングを縮める方式なら、左マージンが何であっても本文はその内側に収まる。
+   目次サイドバーは position:fixed で viewport 基準に配置されるので影響を受けない。 */
+body {
+  padding-right: var(--pin-w) !important;
+  margin-right: 0 !important;
   box-sizing: border-box !important;
 }
+.ltx_page_main {
+  width: auto !important;
+  /* ar5iv の .ltx_page_main は inline-block (shrink-to-fit) なので、
+     max-width を外すと中身の希望幅まで伸びて親からはみ出す。
+     必ず親幅で頭打ちにする。 */
+  max-width: 100% !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+/* 幅の上限だけ外して本文をパネルの手前まで広げる。
+   左右のマージンには触らない。ar5iv は目次サイドバーぶんの余白を
+   .ltx_page_content の左マージンで確保しており、ここを 0 にすると
+   本文がサイドバーの下に潜り込んで左端が読めなくなる。 */
 .ltx_page_content, .ltx_document {
   max-width: 100% !important;
   width: auto !important;
   box-sizing: border-box !important;
-  /* 中央寄せ・右パディングを解除して、余った右側の空きを詰める */
-  margin-left: 0 !important;
-  margin-right: 0 !important;
   padding-right: 0 !important;
 }
-.ltx_page_main { padding-right: 0 !important; }
-body { margin-right: 0; }
 #pin-resizer {
   position: fixed; top: 0; right: 380px; width: 6px; height: 100vh;
   cursor: col-resize; z-index: 10000; background: transparent;
@@ -270,8 +283,21 @@ SCRIPT = """
     document.documentElement.style.setProperty('--pin-w', (w + 8) + 'px');
   }
 
+  // 既定の 380px は広い画面向け。狭いウィンドウではパネルが場所を占めすぎて
+  // 本文が潰れ、横スクロールが出て左端が隠れてしまうため、幅に応じて詰める。
+  // ユーザーが自分でドラッグして決めた後は、その幅を尊重する。
+  var userSized = false;
+
+  function fitWidth() {
+    if (!userSized) setWidth(Math.min(380, window.innerWidth * 0.4));
+  }
+
+  fitWidth();
+  window.addEventListener('resize', fitWidth);
+
   resizer.addEventListener('mousedown', function (e) {
     e.preventDefault();
+    userSized = true;
     resizer.classList.add('dragging');
     function move(ev) { setWidth(window.innerWidth - ev.clientX); }
     function stop() {
@@ -339,6 +365,47 @@ SCRIPT = """
     title.classList.add('pin-able', 'pin-tag');
     title.addEventListener('click', function (e) { e.preventDefault(); pin(id); });
   });
+
+  // 本文が画面の左にはみ出す・目次サイドバーの下に潜るのを防ぐ。
+  // ar5iv は画面幅で本文のレイアウト (inline-block / flex) を切り替えるうえ、
+  // 内部のオフセットの持ち方もモードごとに違う。CSS の決め打ちでは
+  // 追い切れないため、実際の描画位置を測って足りない分だけ押し戻す。
+  (function () {
+    var main = document.querySelector('.ltx_page_main');
+    var content = document.querySelector('.ltx_page_content');
+    if (!main || !content) return;
+
+    // 左端に最低限確保する余白 (px)
+    var GUTTER = 24;
+
+    function fit() {
+      main.style.paddingLeft = '';
+      // 押し戻す量 = 「左端のはみ出し」と「サイドバーとの重なり」の大きい方。
+      // 画面端にぴったり付くと読みにくいので、GUTTER 分の余白まで含めて確保する。
+      // flex の中央寄せだと padding の半分しか効かないことがあるので、
+      // 一度で決めず、測り直しながら数回で収束させる。
+      for (var i = 0; i < 4; i++) {
+        var left = content.getBoundingClientRect().left;
+        var nav = document.querySelector('.ltx_page_navbar');
+        var navRight = 0;
+        if (nav) {
+          var st = window.getComputedStyle(nav);
+          if ((st.position === 'fixed' || st.position === 'absolute') &&
+              st.display !== 'none' && nav.getBoundingClientRect().width > 0) {
+            navRight = nav.getBoundingClientRect().right;
+          }
+        }
+        var need = Math.max(GUTTER - left, navRight + GUTTER - left);
+        if (need <= 0) break;
+        var cur = parseFloat(main.style.paddingLeft) || 0;
+        main.style.paddingLeft = Math.ceil(cur + need) + 'px';
+      }
+    }
+
+    fit();
+    window.addEventListener('resize', fit);
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(document.body);
+  })();
 
   document.getElementById('pin-clear').onclick = function () { pinned = []; render(); };
   render();
