@@ -51,6 +51,8 @@ Windows では、`run.bat` に HTML ファイルをドラッグ＆ドロップ�
 
 ## 開発
 
+[uv](https://docs.astral.sh/uv/getting-started/installation/) が必要です（Python 3.11 以上は uv が自動で用意します）。
+
 ```bash
 git clone https://github.com/sho-610/arxiv-pin
 cd arxiv-pin
